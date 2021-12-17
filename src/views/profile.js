@@ -124,6 +124,33 @@ const Profile = () => {
       console.log(e.message);
     }
   };
+
+  const unlinkAccount = async (sub, provider, user_id) => {
+    console.log({ sub, provider, user_id });
+    const URL = `https://${domain}/api/v2/users/${sub}/identities/${provider}/${user_id}`;
+
+    try {
+      const accessToken = await getAccessTokenSilently({
+        scope: "update:users",
+      });
+      console.log({ accessToken });
+
+      const unlinkedAccountResponse = await (
+        await fetch(URL, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: sub,
+            provider,
+            user_id,
+          }),
+        })
+      ).json();
+      console.log({ unlinkedAccountResponse });
+      setLinkedAccounts(unlinkedAccountResponse.slice(1));
     } catch (e) {
       console.log(e.message);
     }
@@ -199,6 +226,9 @@ const Profile = () => {
                 })
               : "No linked accounts yet"}
           </pre>
+          <button className="btn btn-primary" onClick={linkAccount}>
+            Link an account
+          </button>
         </div>
       </div>
     </div>
