@@ -10,6 +10,8 @@ const Profile = () => {
   const { user, getAccessTokenSilently } = useAuth0();
   const [userMetadata, setUserMetadata] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [linkedAccounts, setLinkedAccounts] = useState(null);
+
   const formRef = useRef();
 
   const authenticateUser = async () => {
@@ -47,6 +49,7 @@ const Profile = () => {
         console.log({ user });
 
         setUserMetadata(user.user_metadata);
+        setLinkedAccounts(user.identities);
       } catch (e) {
         console.log(e.message);
       }
@@ -61,6 +64,7 @@ const Profile = () => {
     const { metadata } = formRef.current;
 
     try {
+      setSubmitting(true);
       const accessToken = await getAccessTokenSilently({
         scope: "update:current_user_metadata",
         ignoreCache: true,
@@ -82,6 +86,44 @@ const Profile = () => {
       ).json();
 
       setUserMetadata(user_metadata);
+      formRef.current.reset();
+    } catch (e) {
+      console.log(e.message);
+      setSubmitting(false);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const linkAccount = async () => {
+    try {
+      const accessToken = await getAccessTokenSilently({
+        scope: "update:current_user_identities",
+      });
+
+      const URL = `https://${domain}/api/v2/users/${user.sub}/identities`;
+
+      const { __raw } = await authenticateUser();
+
+      const response = await (
+        await fetch(URL, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            link_with: __raw,
+          }),
+        })
+      ).json();
+
+      console.log({ response });
+      setLinkedAccounts(response);
+    } catch (e) {
+      console.log(e.message);
+    }
+  };
     } catch (e) {
       console.log(e.message);
     }
@@ -127,6 +169,38 @@ const Profile = () => {
           Update Metadata
         </button>
       </form>
+
+      <div>
+        <div className="row">
+          <h2>Linked Accounts</h2>
+          <pre className="col-12 text-light bg-dark p-4">
+            {linkedAccounts
+              ? linkedAccounts.slice(1).map(({ profileData, ...restProps }) => {
+                  const { email, name } = profileData;
+                  const { connection, provider, user_id } = restProps;
+                  return (
+                    <div
+                      className="d-flex flex-row align-items-center justify-content-between"
+                      key={user_id}>
+                      <div>
+                        <h3>Account</h3>
+                        <p>Email: {email}</p>
+                        <p>Name: {name}</p>
+                        <p>Connection: {connection}</p>
+                        <p>Provider: {provider}</p>
+                      </div>
+                      <button
+                        className="btn btn-danger"
+                        onClick={() => unlinkAccount(sub, provider, user_id)}>
+                        Unlink account
+                      </button>
+                    </div>
+                  );
+                })
+              : "No linked accounts yet"}
+          </pre>
+        </div>
+      </div>
     </div>
   );
 };
