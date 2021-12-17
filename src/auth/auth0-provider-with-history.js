@@ -19,7 +19,7 @@ const Auth0ProviderWithHistory = ({ children }) => {
       redirectUri={window.location.origin}
       onRedirectCallback={onRedirectCallback}
       audience={`https://${domain}/api/v2/`}
-      scope="read:current_user update:current_user_metadata"
+      scope="read:current_user update:current_user_metadata update:current_user_identities update:users"
       useRefreshTokens={true}>
       {children}
     </Auth0Provider>
