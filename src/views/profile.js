@@ -1,27 +1,41 @@
 import React, { useState, useEffect, useRef } from "react";
 
 import { useAuth0 } from "@auth0/auth0-react";
+import { Auth0Client } from "@auth0/auth0-spa-js";
+
+const domain = "dev-wcwybeid.us.auth0.com";
+const client_id = process.env.REACT_APP_AUTH0_CLIENT_ID;
 
 const Profile = () => {
   const { user, getAccessTokenSilently } = useAuth0();
   const [userMetadata, setUserMetadata] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
   const formRef = useRef();
 
-  const { name, picture, email } = user;
+  const authenticateUser = async () => {
+    const auth0 = new Auth0Client({
+      domain,
+      client_id,
+    });
+    await auth0.loginWithPopup({
+      max_age: 0,
+      scope: "openid",
+    });
+    console.log(auth0.getIdTokenClaims().then((claim) => console.log(claim)));
+    return await auth0.getIdTokenClaims();
+  };
+
+  const { name, picture, email, sub } = user;
 
   //Fetch user_metadata
   useEffect(() => {
     const getUserMetadata = async () => {
-      const domain = "dev-wcwybeid.us.auth0.com";
-
       try {
         const accessToken = await getAccessTokenSilently({
-          audience: `https://${domain}/api/v2/`,
           scope: "read:current_user",
-          ignoreCache: true,
         });
 
-        const userDetailsByIdUrl = `https://${domain}/api/v2/users/${user.sub}`;
+        const userDetailsByIdUrl = `https://${domain}/api/v2/users/${sub}`;
 
         const metadataResponse = await fetch(userDetailsByIdUrl, {
           headers: {
@@ -29,27 +43,25 @@ const Profile = () => {
           },
         });
 
-        const { user_metadata } = await metadataResponse.json();
+        const user = await metadataResponse.json();
+        console.log({ user });
 
-        setUserMetadata(user_metadata);
+        setUserMetadata(user.user_metadata);
       } catch (e) {
         console.log(e.message);
       }
     };
 
     getUserMetadata();
-  }, [getAccessTokenSilently, user && user.sub]);
+  }, [getAccessTokenSilently, sub]);
 
   //Update user_metadata
   const updateUserMetadata = async (e) => {
     e.preventDefault();
     const { metadata } = formRef.current;
 
-    const domain = "dev-wcwybeid.us.auth0.com";
-
     try {
       const accessToken = await getAccessTokenSilently({
-        audience: `https://${domain}/api/v2/`,
         scope: "update:current_user_metadata",
         ignoreCache: true,
       });
@@ -91,12 +103,14 @@ const Profile = () => {
         </div>
       </div>
       <div className="row">
+        <h2>User Details</h2>
         <pre className="col-12 text-light bg-dark p-4">
           {JSON.stringify(user, null, 2)}
         </pre>
       </div>
       {userMetadata ? (
         <div className="row">
+          <h2>User Metadata</h2>
           <pre className="col-12 text-light bg-dark p-4">
             {JSON.stringify(userMetadata, null, 2)}
           </pre>
@@ -109,7 +123,9 @@ const Profile = () => {
           <span>New metadata</span>
           <input type="text" name="metadata" />
         </label>
-        <button type="submit">Update Metadata</button>
+        <button type="submit" disabled={submitting}>
+          Update Metadata
+        </button>
       </form>
     </div>
   );
