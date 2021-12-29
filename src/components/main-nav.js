@@ -17,6 +17,13 @@ const MainNav = () => (
       activeClassName="router-link-exact-active">
       Profile
     </NavLink>
+    <NavLink
+      to="/external-api"
+      exact
+      className="nav-link"
+      activeClassName="router-link-exact-active">
+      External API
+    </NavLink>
   </div>
 );
 
