@@ -5,6 +5,7 @@ import { Auth0Provider } from "@auth0/auth0-react";
 const Auth0ProviderWithHistory = ({ children }) => {
   const domain = process.env.REACT_APP_AUTH0_DOMAIN;
   const clientId = process.env.REACT_APP_AUTH0_CLIENT_ID;
+  const audience = process.env.REACT_APP_AUTH0_AUDIENCE;
 
   const history = useHistory();
 
@@ -18,9 +19,11 @@ const Auth0ProviderWithHistory = ({ children }) => {
       clientId={clientId}
       redirectUri={window.location.origin}
       onRedirectCallback={onRedirectCallback}
-      audience={`https://${domain}/api/v2/`}
-      scope="read:current_user update:current_user_metadata update:current_user_identities update:users"
-      useRefreshTokens={true}>
+      // audience={`https://${domain}/api/v2/`}
+      audience={audience}
+      // scope="read:current_user update:current_user_metadata update:current_user_identities update:users"
+      // useRefreshTokens={true}
+    >
       {children}
     </Auth0Provider>
   );
