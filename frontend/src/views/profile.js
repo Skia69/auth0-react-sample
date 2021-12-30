@@ -4,6 +4,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { Auth0Client } from "@auth0/auth0-spa-js";
 
 const domain = "dev-wcwybeid.us.auth0.com";
+const audience = `https://${domain}/api/v2/`;
 const client_id = process.env.REACT_APP_AUTH0_CLIENT_ID;
 
 const Profile = () => {
@@ -34,10 +35,12 @@ const Profile = () => {
     const getUserMetadata = async () => {
       try {
         const accessToken = await getAccessTokenSilently({
+          audience,
           scope: "read:current_user",
         });
 
         const userDetailsByIdUrl = `https://${domain}/api/v2/users/${sub}`;
+        // const userDetailsByIdUrl = `https://${domain}/userinfo`;
 
         const metadataResponse = await fetch(userDetailsByIdUrl, {
           headers: {
@@ -47,6 +50,7 @@ const Profile = () => {
 
         const user = await metadataResponse.json();
         console.log({ user });
+        console.log({ accessToken });
 
         setUserMetadata(user.user_metadata);
         setLinkedAccounts(user.identities);
@@ -66,6 +70,7 @@ const Profile = () => {
     try {
       setSubmitting(true);
       const accessToken = await getAccessTokenSilently({
+        audience,
         scope: "update:current_user_metadata",
         ignoreCache: true,
       });
@@ -98,6 +103,7 @@ const Profile = () => {
   const linkAccount = async () => {
     try {
       const accessToken = await getAccessTokenSilently({
+        audience,
         scope: "update:current_user_identities",
       });
 
@@ -131,9 +137,9 @@ const Profile = () => {
 
     try {
       const accessToken = await getAccessTokenSilently({
+        audience,
         scope: "update:users",
       });
-      console.log({ accessToken });
 
       const unlinkedAccountResponse = await (
         await fetch(URL, {
@@ -149,8 +155,10 @@ const Profile = () => {
           }),
         })
       ).json();
-      console.log({ unlinkedAccountResponse });
-      setLinkedAccounts(unlinkedAccountResponse.slice(1));
+
+      setLinkedAccounts(
+        unlinkedAccountResponse && unlinkedAccountResponse.slice(1)
+      );
     } catch (e) {
       console.log(e.message);
     }
